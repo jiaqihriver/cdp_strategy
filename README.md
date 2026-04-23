@@ -70,8 +70,3 @@
 ## 📄 开源协议
 
 MIT License
-
----
-
-**Enjoy your trading with CDP！**  
-如果觉得有用，欢迎 Star ⭐ 或分享给更多朋友。# cdp_strategy
