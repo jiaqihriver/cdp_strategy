@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>CDP逆市操作指标 | 快捷选股+自动计算</title>
+    <title>CDP逆市操作指标 | 基于昨日数据</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            background: linear-gradient(145deg, #f0f4fa 0%, #e6edf4 100%);
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0b1219 0%, #0a0f16 100%);
+            font-family: 'Segoe UI', 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
             padding: 28px 20px;
-            color: #1a2c3e;
+            color: #eef2ff;
         }
 
         .container {
@@ -24,47 +24,48 @@
         }
 
         .card {
-            background: rgba(255,255,255,0.94);
+            background: rgba(18, 25, 35, 0.8);
+            backdrop-filter: blur(2px);
             border-radius: 2rem;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(255,255,255,0.05);
             padding: 1.8rem;
             margin-bottom: 1.5rem;
-            border: 1px solid rgba(255,255,255,0.6);
+            border: 1px solid rgba(56, 78, 98, 0.5);
         }
 
         h1 {
             font-size: 1.9rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #1E3C72, #2A5298);
+            background: linear-gradient(135deg, #ffb347, #e67e22);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
             letter-spacing: -0.3px;
-            display: inline-block;
             margin-bottom: 0.25rem;
         }
 
         .sub {
-            color: #4a627a;
+            color: #9aaebf;
             margin-bottom: 1.5rem;
-            border-left: 4px solid #2c7da0;
+            border-left: 4px solid #e67e22;
             padding-left: 1rem;
             font-size: 0.9rem;
             font-weight: 500;
         }
 
-        /* 快捷选股区域 */
+        /* 快捷选股区 */
         .quick-stock-section {
-            background: #fff9ef;
+            background: rgba(12, 20, 28, 0.7);
             border-radius: 1.2rem;
             padding: 1rem 1.2rem;
             margin-bottom: 1.5rem;
-            border: 1px solid #ffe6b3;
+            border: 1px solid rgba(70, 100, 120, 0.5);
+            backdrop-filter: blur(2px);
         }
         .section-title {
             font-weight: 700;
             font-size: 0.85rem;
-            color: #b85c00;
+            color: #e67e22;
             margin-bottom: 0.8rem;
             display: flex;
             justify-content: space-between;
@@ -82,7 +83,7 @@
             padding: 4px 2px;
         }
         .stock-badge {
-            background: white;
+            background: rgba(30, 40, 50, 0.9);
             border-radius: 2rem;
             padding: 6px 12px 6px 16px;
             font-size: 0.8rem;
@@ -90,20 +91,22 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            border: 1px solid #2a4b6e;
             transition: 0.1s;
             cursor: pointer;
+            color: #e2e8f0;
         }
         .stock-badge:hover {
-            background: #eef2ff;
-            border-color: #2c7da0;
+            background: #1f3a4b;
+            border-color: #e67e22;
+            transform: translateY(-1px);
         }
         .stock-badge .name {
-            color: #1f4662;
+            color: #ffb347;
         }
         .stock-badge .code {
-            color: #6c8dae;
+            color: #7c9ec0;
             font-family: monospace;
             font-size: 0.7rem;
         }
@@ -112,15 +115,15 @@
             border: none;
             font-size: 1rem;
             cursor: pointer;
-            color: #b91c1c;
+            color: #f97373;
             padding: 0 4px;
             border-radius: 20px;
             line-height: 1;
             transition: 0.1s;
         }
         .del-btn:hover {
-            background: #fee2e2;
-            transform: scale(1.1);
+            background: #511111;
+            color: #ffaaaa;
         }
         .add-stock-panel {
             display: flex;
@@ -134,27 +137,37 @@
             min-width: 140px;
             padding: 8px 14px;
             border-radius: 2rem;
-            border: 1px solid #cbdde9;
+            border: 1px solid #2e4a6a;
+            background: #0f1a24;
+            color: #eef2ff;
             font-size: 0.85rem;
         }
+        .add-stock-panel input:focus {
+            outline: none;
+            border-color: #e67e22;
+        }
         .small-btn {
-            background: #e6b422;
+            background: #3a5a78;
             padding: 6px 16px;
             border-radius: 2rem;
             font-size: 0.75rem;
             font-weight: 600;
-            color: #2c3e2f;
+            color: #fef9e6;
             box-shadow: none;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
         }
         .small-btn:hover {
-            background: #d4a31a;
+            background: #5e7e9e;
+            transform: translateY(-1px);
         }
         .limit-hint {
             font-size: 0.7rem;
-            color: #8c6a2c;
+            color: #bfa16c;
         }
         .empty-list {
-            color: #a0aec0;
+            color: #6c879c;
             font-size: 0.75rem;
             padding: 8px 0;
         }
@@ -175,10 +188,10 @@
         .input-group label {
             display: block;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #2c5a7a;
+            color: #cbd5e6;
             margin-bottom: 0.4rem;
         }
 
@@ -186,18 +199,18 @@
             width: 100%;
             padding: 12px 14px;
             font-size: 1rem;
-            border: 1.5px solid #cbdde9;
+            border: 1.5px solid #2c4158;
             border-radius: 1.2rem;
-            background: white;
+            background: #0e171f;
+            color: #f0f3f8;
             transition: 0.2s;
             font-weight: 500;
-            color: #0a2b3e;
         }
 
         .input-group input:focus {
             outline: none;
-            border-color: #2c7da0;
-            box-shadow: 0 0 0 3px rgba(44,125,160,0.2);
+            border-color: #e67e22;
+            box-shadow: 0 0 0 3px rgba(230,126,34,0.2);
         }
 
         .btn-group {
@@ -208,7 +221,7 @@
         }
 
         button {
-            background: #2c7da0;
+            background: #2c5a7c;
             border: none;
             padding: 10px 28px;
             border-radius: 2rem;
@@ -217,34 +230,25 @@
             color: white;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-
         button:hover {
-            background: #1f5e7e;
+            background: #3e7a9e;
             transform: translateY(-1px);
         }
-
         button.secondary {
-            background: #5f7f9e;
+            background: #4a5e6e;
         }
-
         button.secondary:hover {
-            background: #3e5d7a;
+            background: #637e96;
         }
-
-        button.small {
-            padding: 6px 18px;
-            font-size: 0.8rem;
-        }
-
         button.loading {
             opacity: 0.6;
             cursor: wait;
         }
 
         .stock-auto-row {
-            background: #eef2fa;
+            background: #0f1821;
             border-radius: 1.2rem;
             padding: 0.8rem 1.2rem;
             margin-bottom: 1.2rem;
@@ -252,42 +256,32 @@
             flex-wrap: wrap;
             align-items: flex-end;
             gap: 1rem;
+            border: 1px solid #2a4b6e;
         }
-
         .stock-input-group {
             flex: 2;
             min-width: 180px;
         }
-
         .stock-input-group label {
             display: block;
             font-weight: 600;
             font-size: 0.75rem;
-            text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #2c5a7a;
+            color: #cddfef;
             margin-bottom: 0.3rem;
         }
-
         .stock-input-group input {
             width: 100%;
             padding: 10px 14px;
             font-size: 1rem;
-            border: 1.5px solid #cbdde9;
+            border: 1.5px solid #2b4b6a;
             border-radius: 1.2rem;
-            background: white;
-            transition: 0.2s;
+            background: #0a121a;
+            color: #f0f3f8;
         }
-
-        .stock-input-group input:focus {
-            outline: none;
-            border-color: #2c7da0;
-            box-shadow: 0 0 0 3px rgba(44,125,160,0.2);
-        }
-
         .hint-text {
             font-size: 0.7rem;
-            color: #5f7f9e;
+            color: #7c9ec0;
             margin-top: 4px;
         }
 
@@ -298,48 +292,53 @@
             gap: 12px;
             margin: 1.8rem 0 1rem;
         }
-
         .level-card {
-            background: white;
+            background: rgba(18, 28, 40, 0.8);
+            backdrop-filter: blur(4px);
             flex: 1 1 100px;
             text-align: center;
-            padding: 12px 6px;
+            padding: 14px 8px;
             border-radius: 1.5rem;
-            box-shadow: 0 6px 12px -8px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 16px -6px rgba(0,0,0,0.4);
             border-bottom: 3px solid;
             transition: 0.1s;
+            border-left: 1px solid rgba(230,126,34,0.3);
+            border-right: 1px solid rgba(230,126,34,0.1);
         }
-
         .level-card .label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
-            color: #3e6b8c;
+            color: #cbdae9;
         }
-
         .level-card .value {
             font-size: 1.35rem;
             font-weight: 800;
-            color: #1c3f55;
+            color: #ffa559;
             margin-top: 6px;
+            text-shadow: 0 0 2px rgba(0,0,0,0.5);
         }
-
-        .level-card.ah { border-bottom-color: #e76f51; }
-        .level-card.nh { border-bottom-color: #f4a261; }
-        .level-card.cdp { border-bottom-color: #2a9d8f; }
-        .level-card.nl { border-bottom-color: #60a5fa; }
-        .level-card.al { border-bottom-color: #3b82f6; }
+        .level-card.nl .value, .level-card.al .value {
+            color: #5dade2;
+        }
+        .level-card.cdp .value {
+            color: #6fcf97;
+        }
+        .level-card.ah { border-bottom-color: #ff8c5a; }
+        .level-card.nh { border-bottom-color: #ffa559; }
+        .level-card.cdp { border-bottom-color: #6fcf97; }
+        .level-card.nl { border-bottom-color: #5dade2; }
+        .level-card.al { border-bottom-color: #5dade2; }
 
         .footnote {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-align: center;
             margin-top: 1.8rem;
-            color: #5c7c94;
-            border-top: 1px solid #d4e2ec;
+            color: #7f9aba;
+            border-top: 1px solid #2c4258;
             padding-top: 1rem;
         }
-
         .footnote p {
             margin: 4px 0;
         }
@@ -347,7 +346,7 @@
         @media (max-width: 680px) {
             .card { padding: 1.2rem; }
             .level-card .value { font-size: 1rem; }
-            .level-card .label { font-size: 0.65rem; }
+            .level-card .label { font-size: 0.6rem; }
             .form-grid { gap: 0.8rem; }
             .stock-badge { font-size: 0.7rem; padding: 4px 10px; }
         }
@@ -357,22 +356,21 @@
 <div class="container">
     <div class="card">
         <h1>📊 CDP 逆市操作指标</h1>
-        <div class="sub">经典日内支撑/阻力系统 · 基于最新交易日数据计算关键位</div>
+        <div class="sub">经典日内支撑/阻力系统 · 基于昨日（上一完整交易日）数据 · 自动更新</div>
 
         <!-- 快捷选股区 -->
-        <div class="quick-stock-section" id="quickStockSection">
+        <div class="quick-stock-section">
             <div class="section-title">
                 ⚡ 快捷选股区 (最多10只)
-                <span class="limit-hint">点击即加载数据</span>
+                <span class="limit-hint">点击即加载昨日数据</span>
             </div>
             <div id="stockListContainer" class="stock-list">
-                <!-- 动态渲染快捷股票列表 -->
                 <div class="empty-list">暂无快捷股票，输入代码并点击「➕ 添加快捷选股」</div>
             </div>
             <div class="add-stock-panel">
                 <input type="text" id="quickStockCode" placeholder="输入股票代码 例如 000858" value="">
                 <button id="addQuickStockBtn" class="small-btn">➕ 添加快捷选股</button>
-                <span id="quickStockMsg" style="font-size:0.7rem; color:#2c7da0;"></span>
+                <span id="quickStockMsg" style="font-size:0.7rem; color:#ffa559;"></span>
             </div>
         </div>
 
@@ -381,31 +379,31 @@
             <div class="stock-input-group">
                 <label>📋 股票代码（A股）</label>
                 <input type="text" id="stockCode" placeholder="例如: 600519 或 000001" value="600519">
-                <div class="hint-text">支持上海/深圳A股</div>
+                <div class="hint-text">支持上海/深圳A股，始终获取上一完整交易日数据（过零点自动更新）</div>
             </div>
             <div class="btn-group" style="margin-top: 0;">
-                <button id="fetchStockBtn">📥 获取最新数据</button>
-                <button id="clearCodeBtn" class="secondary" style="background:#8faa8f;">🗑️ 清空代码</button>
+                <button id="fetchStockBtn">📥 获取昨日数据</button>
+                <button id="clearCodeBtn" class="secondary" style="background:#4e6272;">🗑️ 清空代码</button>
             </div>
-            <div id="stockFetchStatus" style="font-size:0.75rem; color:#5f7f9e; align-self:center;"></div>
+            <div id="stockFetchStatus" style="font-size:0.75rem; color:#aac8e6; align-self:center;"></div>
         </div>
 
         <div class="form-grid">
             <div class="input-group">
-                <label>📈 最新最高价 (H)</label>
+                <label>📈 昨日最高价 (H)</label>
                 <input type="number" id="high" step="any" value="152.50" placeholder="最高价">
             </div>
             <div class="input-group">
-                <label>📉 最新最低价 (L)</label>
+                <label>📉 昨日最低价 (L)</label>
                 <input type="number" id="low" step="any" value="145.20" placeholder="最低价">
             </div>
             <div class="input-group">
-                <label>🔵 最新收盘价 (C)</label>
+                <label>🔵 昨日收盘价 (C)</label>
                 <input type="number" id="close" step="any" value="148.80" placeholder="收盘价">
             </div>
         </div>
 
-        <!-- CDP关键点位卡片 -->
+        <!-- 关键点位卡片 -->
         <div class="levels-panel">
             <div class="level-card ah"><div class="label">🚀 AH (最高阻力)</div><div class="value" id="ahVal">--</div></div>
             <div class="level-card nh"><div class="label">⚡ NH (近高阻力)</div><div class="value" id="nhVal">--</div></div>
@@ -417,7 +415,7 @@
         <div class="footnote">
             <p>💡 CDP公式：CDP = (H+L+2C)/4 &nbsp;|&nbsp; AH = CDP + (H-L) &nbsp;|&nbsp; NH = 2×CDP - L &nbsp;|&nbsp; NL = 2×CDP - H &nbsp;|&nbsp; AL = CDP - (H-L)</p>
             <p>📍 策略核心：箱体震荡（价格在NL~NH之间）可低买高卖或反T；跳空开高/开低（价格触及AH/AL）则顺势追买/追卖。</p>
-            <p>🔍 数据源：腾讯财经API | 快捷选股自动保存至本地</p>
+            <p>🔍 数据源：腾讯财经API · 页面加载时自动获取最新昨日数据，过零点后刷新页面即可自动更新</p>
         </div>
     </div>
 </div>
@@ -446,11 +444,9 @@
     // ---------- 全局变量 ----------
     let lastIndicators = { valid: false };
     
-    // 快捷股票列表存储 key
     const STORAGE_KEY = 'cdp_quick_stocks';
-    let quickStocks = [];   // 每个元素 { code, name }
+    let quickStocks = [];   // { code, name }
     
-    // ---------- 辅助函数 ----------
     function formatNum(val) {
         if (val === null || isNaN(val)) return '--';
         return val.toFixed(2);
@@ -508,7 +504,7 @@
         updateCards(lastIndicators);
     }
     
-    // ---------- 股票名称获取（GBK）----------
+    // ---------- 股票名称获取 ----------
     async function fetchStockName(rawCode) {
         const code = rawCode.trim();
         let marketCode = '';
@@ -531,8 +527,8 @@
         }
     }
     
-    // 获取最新交易日数据（避免缓存）
-    async function fetchLatestStockData(stockCode) {
+    // 始终获取上一完整交易日数据（昨日）
+    async function fetchYesterdayData(stockCode) {
         let marketCode = stockCode.trim();
         if (!marketCode.startsWith('sh') && !marketCode.startsWith('sz')) {
             if (marketCode.startsWith('6')) marketCode = 'sh' + marketCode;
@@ -547,27 +543,28 @@
         const stockData = data.data[marketCode];
         let klineData = stockData.qfqday || stockData.day;
         if (!klineData || !klineData.length) throw new Error('无K线数据');
-        const latest = klineData[klineData.length - 1];
-        if (!latest) throw new Error('无最新数据');
-        const date = latest[0];
-        const high = parseFloat(latest[3]);
-        const low = parseFloat(latest[4]);
-        const close = parseFloat(latest[2]);
+        
+        // 取倒数第二条（昨日）作为基准
+        if (klineData.length < 2) throw new Error('历史数据不足，无法获取昨日数据');
+        const yesterdayKline = klineData[klineData.length - 2];
+        const date = yesterdayKline[0];
+        const high = parseFloat(yesterdayKline[3]);
+        const low = parseFloat(yesterdayKline[4]);
+        const close = parseFloat(yesterdayKline[2]);
         if (isNaN(high) || isNaN(low) || isNaN(close)) throw new Error('数据解析失败');
         return { high, low, close, date };
     }
     
-    // 获取数据并填充表单，同时更新状态信息
     async function fetchAndFillStockData(codeToFetch = null) {
         const stockCode = (codeToFetch !== null) ? codeToFetch : stockCodeInput.value.trim();
         if (!stockCode) {
-            stockFetchStatus.innerHTML = '<span style="color:#e67e22;">⚠️ 请输入股票代码</span>';
+            stockFetchStatus.innerHTML = '<span style="color:#ffa559;">⚠️ 请输入股票代码</span>';
             return;
         }
         
         fetchStockBtn.classList.add('loading');
         fetchStockBtn.textContent = '⏳ 获取中...';
-        stockFetchStatus.innerHTML = '<span style="color:#2c7da0;">正在获取最新数据...</span>';
+        stockFetchStatus.innerHTML = '<span style="color:#aac8e6;">正在获取昨日数据...</span>';
         
         try {
             let stockName = null;
@@ -575,24 +572,23 @@
                 stockName = await fetchStockName(stockCode);
             } catch(e) { }
             
-            const { high, low, close, date } = await fetchLatestStockData(stockCode);
+            const { high, low, close, date } = await fetchYesterdayData(stockCode);
             highInput.value = high;
             lowInput.value = low;
             closeInput.value = close;
             
             const displayName = stockName ? `${stockName}(${stockCode})` : stockCode;
-            stockFetchStatus.innerHTML = `<span style="color:#27ae60;">✅ ${displayName} 最新交易日(${date}) 高:${high.toFixed(2)} 低:${low.toFixed(2)} 收:${close.toFixed(2)}</span>`;
-            
+            stockFetchStatus.innerHTML = `<span style="color:#6fcf97;">✅ ${displayName} 昨日(${date}) 高:${high.toFixed(2)} 低:${low.toFixed(2)} 收:${close.toFixed(2)}</span>`;
             recalcAndStore();
         } catch (error) {
-            stockFetchStatus.innerHTML = `<span style="color:#e74c3c;">❌ 获取失败: ${error.message}</span>`;
+            stockFetchStatus.innerHTML = `<span style="color:#f97373;">❌ 获取失败: ${error.message}</span>`;
         } finally {
             fetchStockBtn.classList.remove('loading');
-            fetchStockBtn.textContent = '📥 获取最新数据';
+            fetchStockBtn.textContent = '📥 获取昨日数据';
         }
     }
     
-    // ---------- 快捷选股存储管理 ----------
+    // ---------- 快捷选股存储 ----------
     function saveQuickStocks() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(quickStocks));
     }
@@ -603,7 +599,6 @@
             try {
                 quickStocks = JSON.parse(stored);
                 if (!Array.isArray(quickStocks)) quickStocks = [];
-                // 去重/限制10
                 const unique = [];
                 const map = new Map();
                 for (const item of quickStocks) {
@@ -621,7 +616,6 @@
         renderQuickStockList();
     }
     
-    // 渲染快捷股票列表
     function renderQuickStockList() {
         if (!stockListContainer) return;
         if (quickStocks.length === 0) {
@@ -640,27 +634,21 @@
         }).join('');
         stockListContainer.innerHTML = html;
         
-        // 绑定点击事件（委托）
         stockListContainer.querySelectorAll('.stock-badge').forEach(el => {
             const code = el.getAttribute('data-code');
             if (!code) return;
-            // 点击主区域加载数据
             el.addEventListener('click', (e) => {
                 if (e.target.classList.contains('del-btn')) return;
                 e.stopPropagation();
-                // 填充代码并获取数据
                 stockCodeInput.value = code;
                 fetchAndFillStockData(code);
             });
-            // 删除按钮单独处理
             const delBtn = el.querySelector('.del-btn');
             if (delBtn) {
                 delBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const targetCode = delBtn.getAttribute('data-code');
-                    if (targetCode) {
-                        removeStockByCode(targetCode);
-                    }
+                    if (targetCode) removeStockByCode(targetCode);
                 });
             }
         });
@@ -684,18 +672,15 @@
         setTimeout(() => { if (quickStockMsg) quickStockMsg.innerHTML = ''; }, 1500);
     }
     
-    // 添加快捷股票（自动获取名称）
     async function addQuickStock() {
         let rawCode = quickStockCodeInput.value.trim();
         if (!rawCode) {
             quickStockMsg.innerHTML = '请输入股票代码';
             return;
         }
-        // 标准化代码（去除sh/sz前缀）
         let pureCode = rawCode.replace(/^sh/i, '').replace(/^sz/i, '');
         if (pureCode.length === 0) pureCode = rawCode;
         
-        // 检查重复
         if (quickStocks.some(s => s.code === pureCode)) {
             quickStockMsg.innerHTML = '该股票已在快捷列表中';
             return;
@@ -705,7 +690,6 @@
             return;
         }
         
-        // 获取股票名称
         quickStockMsg.innerHTML = '获取名称中...';
         let stockName = null;
         try {
@@ -721,29 +705,33 @@
         setTimeout(() => { if (quickStockMsg) quickStockMsg.innerHTML = ''; }, 2000);
     }
     
-    // 清空代码 + 状态（不清除快捷列表）
     function clearStockCode() {
         stockCodeInput.value = '';
         stockFetchStatus.innerHTML = '';
     }
     
-    function setDefaultExample() {
-        highInput.value = "152.50";
-        lowInput.value = "145.20";
-        closeInput.value = "148.80";
-        stockCodeInput.value = "600519";
-        stockFetchStatus.innerHTML = '';
-        recalcAndStore();
+    // 不再使用硬编码示例，改为页面加载时自动获取最新数据
+    // 但为了保留手动修改能力，仅初始化时调用一次自动获取
+    function initAutoFetch() {
+        // 如果有默认股票代码，自动获取昨日数据
+        const defaultCode = stockCodeInput.value.trim();
+        if (defaultCode) {
+            fetchAndFillStockData(defaultCode);
+        } else {
+            // 保底：设置一个示例并计算
+            highInput.value = "152.50";
+            lowInput.value = "145.20";
+            closeInput.value = "148.80";
+            recalcAndStore();
+        }
     }
     
-    // 自动监听输入变化重新计算CDP
     function bindAutoRecalc() {
         highInput.addEventListener('input', recalcAndStore);
         lowInput.addEventListener('input', recalcAndStore);
         closeInput.addEventListener('input', recalcAndStore);
     }
     
-    // 初始化事件
     function init() {
         bindAutoRecalc();
         fetchStockBtn.addEventListener('click', () => fetchAndFillStockData(null));
@@ -753,7 +741,8 @@
             if (e.key === 'Enter') addQuickStock();
         });
         loadQuickStocks();
-        setDefaultExample();
+        // 关键：页面加载时自动获取最新昨日数据（过零点后刷新页面即自动更新）
+        initAutoFetch();
     }
     
     init();
