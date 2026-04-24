@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>CDP逆市操作指标 | 基于昨日数据</title>
+    <title>CDP逆市操作指标 | 历史记录 · 深色专业版</title>
     <style>
         * {
             margin: 0;
@@ -19,10 +19,11 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
         }
 
+        /* 主卡片 */
         .card {
             background: rgba(18, 25, 35, 0.8);
             backdrop-filter: blur(2px);
@@ -331,10 +332,80 @@
         .level-card.nl { border-bottom-color: #5dade2; }
         .level-card.al { border-bottom-color: #5dade2; }
 
+        /* 历史记录模块 */
+        .history-section {
+            background: rgba(12, 20, 28, 0.7);
+            border-radius: 1.2rem;
+            padding: 1rem 1.2rem;
+            margin-top: 1.5rem;
+            border: 1px solid rgba(70, 100, 120, 0.5);
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .history-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #e67e22;
+        }
+        .clear-history-btn {
+            background: #3a3f4b;
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            border-radius: 1rem;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .history-item {
+            background: rgba(25, 35, 45, 0.6);
+            border-radius: 1rem;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: 0.1s;
+            border-left: 3px solid #e67e22;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .history-item:hover {
+            background: #1f3343;
+            transform: translateX(2px);
+        }
+        .history-info {
+            font-size: 0.75rem;
+            font-family: monospace;
+            color: #bcd0e6;
+        }
+        .history-info strong {
+            color: #ffb347;
+        }
+        .history-date {
+            font-size: 0.7rem;
+            color: #7c9ec0;
+        }
+        .history-empty {
+            text-align: center;
+            color: #6c879c;
+            font-size: 0.75rem;
+            padding: 20px;
+        }
+
         .footnote {
             font-size: 0.7rem;
             text-align: center;
-            margin-top: 1.8rem;
+            margin-top: 1.2rem;
             color: #7f9aba;
             border-top: 1px solid #2c4258;
             padding-top: 1rem;
@@ -349,6 +420,7 @@
             .level-card .label { font-size: 0.6rem; }
             .form-grid { gap: 0.8rem; }
             .stock-badge { font-size: 0.7rem; padding: 4px 10px; }
+            .history-info { font-size: 0.7rem; }
         }
     </style>
 </head>
@@ -356,7 +428,7 @@
 <div class="container">
     <div class="card">
         <h1>📊 CDP 逆市操作指标</h1>
-        <div class="sub">经典日内支撑/阻力系统 · 基于昨日（上一完整交易日）数据 · 自动更新</div>
+        <div class="sub">基于昨日完整数据 · 历史记录回溯（自动去重）· 自动更新</div>
 
         <!-- 快捷选股区 -->
         <div class="quick-stock-section">
@@ -412,10 +484,21 @@
             <div class="level-card al"><div class="label">⛰️ AL (最低支撑)</div><div class="value" id="alVal">--</div></div>
         </div>
 
+        <!-- 历史记录模块 -->
+        <div class="history-section">
+            <div class="history-header">
+                <span class="history-title">📜 历史查询记录 (最多15条，同股票同日期自动去重)</span>
+                <button id="clearHistoryBtn" class="clear-history-btn small-btn">清空全部</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <div class="history-empty">暂无历史记录，获取数据后自动保存</div>
+            </div>
+        </div>
+
         <div class="footnote">
             <p>💡 CDP公式：CDP = (H+L+2C)/4 &nbsp;|&nbsp; AH = CDP + (H-L) &nbsp;|&nbsp; NH = 2×CDP - L &nbsp;|&nbsp; NL = 2×CDP - H &nbsp;|&nbsp; AL = CDP - (H-L)</p>
             <p>📍 策略核心：箱体震荡（价格在NL~NH之间）可低买高卖或反T；跳空开高/开低（价格触及AH/AL）则顺势追买/追卖。</p>
-            <p>🔍 数据源：腾讯财经API · 页面加载时自动获取最新昨日数据，过零点后刷新页面即可自动更新</p>
+            <p>🔍 数据源：腾讯财经API · 历史记录自动去重保存</p>
         </div>
     </div>
 </div>
@@ -441,12 +524,18 @@
     const quickStockMsg = document.getElementById('quickStockMsg');
     const stockListContainer = document.getElementById('stockListContainer');
     
+    const historyListDiv = document.getElementById('historyList');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    
     // ---------- 全局变量 ----------
     let lastIndicators = { valid: false };
     
     const STORAGE_KEY = 'cdp_quick_stocks';
-    let quickStocks = [];   // { code, name }
+    const HISTORY_KEY = 'cdp_history_records';
+    let quickStocks = [];
+    let historyRecords = [];   // 最多15条，尾部是最新
     
+    // ---------- 辅助函数 ----------
     function formatNum(val) {
         if (val === null || isNaN(val)) return '--';
         return val.toFixed(2);
@@ -502,6 +591,84 @@
         }
         lastIndicators = { ...res, valid: true };
         updateCards(lastIndicators);
+        return lastIndicators;
+    }
+    
+    // ---------- 历史记录管理（去重：相同股票代码+相同日期只保留最新）----------
+    function saveHistory() {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(historyRecords));
+    }
+    
+    function loadHistory() {
+        const stored = localStorage.getItem(HISTORY_KEY);
+        if (stored) {
+            try {
+                historyRecords = JSON.parse(stored);
+                if (!Array.isArray(historyRecords)) historyRecords = [];
+                if (historyRecords.length > 15) historyRecords = historyRecords.slice(0, 15);
+            } catch(e) { historyRecords = []; }
+        } else {
+            historyRecords = [];
+        }
+        renderHistory();
+    }
+    
+    // 添加一条历史记录，自动去重（同一股票同一日期只保留最新）
+    function addHistoryRecord(record) {
+        // 移除相同股票代码和相同日期的旧记录
+        historyRecords = historyRecords.filter(r => !(r.code === record.code && r.date === record.date));
+        const newRecord = {
+            id: Date.now() + Math.random(),
+            timestamp: Date.now(),
+            ...record
+        };
+        historyRecords.unshift(newRecord);
+        if (historyRecords.length > 15) historyRecords = historyRecords.slice(0, 15);
+        saveHistory();
+        renderHistory();
+    }
+    
+    function clearHistory() {
+        historyRecords = [];
+        saveHistory();
+        renderHistory();
+    }
+    
+    function renderHistory() {
+        if (!historyListDiv) return;
+        if (historyRecords.length === 0) {
+            historyListDiv.innerHTML = '<div class="history-empty">暂无历史记录，获取数据后自动保存</div>';
+            return;
+        }
+        const html = historyRecords.map(rec => {
+            const displayName = rec.name ? `${rec.name}(${rec.code})` : rec.code;
+            return `
+                <div class="history-item" data-id="${rec.id}">
+                    <div class="history-info">
+                        <strong>${escapeHtml(displayName)}</strong> &nbsp; ${rec.date} &nbsp;
+                        H:${rec.high.toFixed(2)} L:${rec.low.toFixed(2)} C:${rec.close.toFixed(2)} &nbsp;
+                        CDP:${rec.cdp.toFixed(2)}
+                    </div>
+                    <div class="history-date">${new Date(rec.timestamp).toLocaleString()}</div>
+                </div>
+            `;
+        }).join('');
+        historyListDiv.innerHTML = html;
+        
+        document.querySelectorAll('.history-item').forEach(el => {
+            const id = parseFloat(el.getAttribute('data-id'));
+            const record = historyRecords.find(r => r.id === id);
+            if (record) {
+                el.addEventListener('click', () => {
+                    highInput.value = record.high;
+                    lowInput.value = record.low;
+                    closeInput.value = record.close;
+                    stockCodeInput.value = record.code;
+                    recalcAndStore();
+                    stockFetchStatus.innerHTML = `<span style="color:#6fcf97;">📜 已加载历史记录 ${record.name || record.code} (${record.date})</span>`;
+                });
+            }
+        });
     }
     
     // ---------- 股票名称获取 ----------
@@ -544,7 +711,6 @@
         let klineData = stockData.qfqday || stockData.day;
         if (!klineData || !klineData.length) throw new Error('无K线数据');
         
-        // 取倒数第二条（昨日）作为基准
         if (klineData.length < 2) throw new Error('历史数据不足，无法获取昨日数据');
         const yesterdayKline = klineData[klineData.length - 2];
         const date = yesterdayKline[0];
@@ -579,7 +745,24 @@
             
             const displayName = stockName ? `${stockName}(${stockCode})` : stockCode;
             stockFetchStatus.innerHTML = `<span style="color:#6fcf97;">✅ ${displayName} 昨日(${date}) 高:${high.toFixed(2)} 低:${low.toFixed(2)} 收:${close.toFixed(2)}</span>`;
-            recalcAndStore();
+            
+            const indicators = recalcAndStore();
+            
+            if (indicators && indicators.valid) {
+                addHistoryRecord({
+                    code: stockCode,
+                    name: stockName || stockCode,
+                    date: date,
+                    high: high,
+                    low: low,
+                    close: close,
+                    cdp: indicators.cdp,
+                    ah: indicators.ah,
+                    nh: indicators.nh,
+                    nl: indicators.nl,
+                    al: indicators.al
+                });
+            }
         } catch (error) {
             stockFetchStatus.innerHTML = `<span style="color:#f97373;">❌ 获取失败: ${error.message}</span>`;
         } finally {
@@ -710,22 +893,6 @@
         stockFetchStatus.innerHTML = '';
     }
     
-    // 不再使用硬编码示例，改为页面加载时自动获取最新数据
-    // 但为了保留手动修改能力，仅初始化时调用一次自动获取
-    function initAutoFetch() {
-        // 如果有默认股票代码，自动获取昨日数据
-        const defaultCode = stockCodeInput.value.trim();
-        if (defaultCode) {
-            fetchAndFillStockData(defaultCode);
-        } else {
-            // 保底：设置一个示例并计算
-            highInput.value = "152.50";
-            lowInput.value = "145.20";
-            closeInput.value = "148.80";
-            recalcAndStore();
-        }
-    }
-    
     function bindAutoRecalc() {
         highInput.addEventListener('input', recalcAndStore);
         lowInput.addEventListener('input', recalcAndStore);
@@ -740,9 +907,10 @@
         quickStockCodeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addQuickStock();
         });
+        clearHistoryBtn.addEventListener('click', clearHistory);
         loadQuickStocks();
-        // 关键：页面加载时自动获取最新昨日数据（过零点后刷新页面即自动更新）
-        initAutoFetch();
+        loadHistory();
+        fetchAndFillStockData('600519');
     }
     
     init();
