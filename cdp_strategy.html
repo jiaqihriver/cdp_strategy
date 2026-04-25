@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>CDP逆市操作指标 | 历史记录 · 深色专业版</title>
+    <title>CDP逆市操作指标 | 智能交易日 · 跨日自动更新</title>
     <style>
         * {
             margin: 0;
@@ -23,7 +23,6 @@
             margin: 0 auto;
         }
 
-        /* 主卡片 */
         .card {
             background: rgba(18, 25, 35, 0.8);
             backdrop-filter: blur(2px);
@@ -414,6 +413,24 @@
             margin: 4px 0;
         }
 
+        /* 自动更新提示 */
+        .auto-update-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1f3343;
+            color: #ffb347;
+            padding: 8px 16px;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border-left: 3px solid #e67e22;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
         @media (max-width: 680px) {
             .card { padding: 1.2rem; }
             .level-card .value { font-size: 1rem; }
@@ -428,7 +445,7 @@
 <div class="container">
     <div class="card">
         <h1>📊 CDP 逆市操作指标</h1>
-        <div class="sub">基于昨日完整数据 · 历史记录回溯（自动去重）· 自动更新</div>
+        <div class="sub">智能识别完整交易日 · 自动更新昨日数据 · 历史记录去重</div>
 
         <!-- 快捷选股区 -->
         <div class="quick-stock-section">
@@ -451,7 +468,7 @@
             <div class="stock-input-group">
                 <label>📋 股票代码（A股）</label>
                 <input type="text" id="stockCode" placeholder="例如: 600519 或 000001" value="600519">
-                <div class="hint-text">支持上海/深圳A股，始终获取上一完整交易日数据（过零点自动更新）</div>
+                <div class="hint-text">支持上海/深圳A股，自动获取最近完整交易日数据（跨日自动刷新）</div>
             </div>
             <div class="btn-group" style="margin-top: 0;">
                 <button id="fetchStockBtn">📥 获取昨日数据</button>
@@ -462,15 +479,15 @@
 
         <div class="form-grid">
             <div class="input-group">
-                <label>📈 昨日最高价 (H)</label>
+                <label>📈 最高价 (H)</label>
                 <input type="number" id="high" step="any" value="152.50" placeholder="最高价">
             </div>
             <div class="input-group">
-                <label>📉 昨日最低价 (L)</label>
+                <label>📉 最低价 (L)</label>
                 <input type="number" id="low" step="any" value="145.20" placeholder="最低价">
             </div>
             <div class="input-group">
-                <label>🔵 昨日收盘价 (C)</label>
+                <label>🔵 收盘价 (C)</label>
                 <input type="number" id="close" step="any" value="148.80" placeholder="收盘价">
             </div>
         </div>
@@ -498,10 +515,11 @@
         <div class="footnote">
             <p>💡 CDP公式：CDP = (H+L+2C)/4 &nbsp;|&nbsp; AH = CDP + (H-L) &nbsp;|&nbsp; NH = 2×CDP - L &nbsp;|&nbsp; NL = 2×CDP - H &nbsp;|&nbsp; AL = CDP - (H-L)</p>
             <p>📍 策略核心：箱体震荡（价格在NL~NH之间）可低买高卖或反T；跳空开高/开低（价格触及AH/AL）则顺势追买/追卖。</p>
-            <p>🔍 数据源：腾讯财经API · 历史记录自动去重保存</p>
+            <p>🔍 数据源：腾讯财经API · 智能选取完整交易日（自动跳过周末/节假日）· 跨日自动刷新</p>
         </div>
     </div>
 </div>
+<div id="autoUpdateToast" class="auto-update-toast">📅 日期变更，已自动更新最新交易日数据</div>
 
 <script>
     // ---------- DOM 元素 ----------
@@ -526,14 +544,17 @@
     
     const historyListDiv = document.getElementById('historyList');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const toastDiv = document.getElementById('autoUpdateToast');
     
     // ---------- 全局变量 ----------
     let lastIndicators = { valid: false };
+    let lastCheckedDate = '';      // 用于跨日检测
+    let autoCheckInterval = null;
     
     const STORAGE_KEY = 'cdp_quick_stocks';
     const HISTORY_KEY = 'cdp_history_records';
     let quickStocks = [];
-    let historyRecords = [];   // 最多15条，尾部是最新
+    let historyRecords = [];
     
     // ---------- 辅助函数 ----------
     function formatNum(val) {
@@ -594,7 +615,29 @@
         return lastIndicators;
     }
     
-    // ---------- 历史记录管理（去重：相同股票代码+相同日期只保留最新）----------
+    // 获取北京时间日期 YYYY-MM-DD
+    function getBeijingDate() {
+        const now = new Date();
+        const localOffset = now.getTimezoneOffset();
+        const beijingOffset = 480;
+        const diff = beijingOffset - localOffset;
+        const beijingDate = new Date(now.getTime() + diff * 60000);
+        return beijingDate.toISOString().slice(0,10);
+    }
+    
+    // 显示短暂提示
+    function showToast(msg, isError = false) {
+        if (!toastDiv) return;
+        toastDiv.textContent = msg;
+        toastDiv.style.backgroundColor = isError ? '#511111' : '#1f3343';
+        toastDiv.style.color = isError ? '#ffaaaa' : '#ffb347';
+        toastDiv.style.opacity = '1';
+        setTimeout(() => {
+            toastDiv.style.opacity = '0';
+        }, 3000);
+    }
+    
+    // ---------- 历史记录管理（去重）----------
     function saveHistory() {
         localStorage.setItem(HISTORY_KEY, JSON.stringify(historyRecords));
     }
@@ -613,9 +656,7 @@
         renderHistory();
     }
     
-    // 添加一条历史记录，自动去重（同一股票同一日期只保留最新）
     function addHistoryRecord(record) {
-        // 移除相同股票代码和相同日期的旧记录
         historyRecords = historyRecords.filter(r => !(r.code === record.code && r.date === record.date));
         const newRecord = {
             id: Date.now() + Math.random(),
@@ -694,15 +735,15 @@
         }
     }
     
-    // 始终获取上一完整交易日数据（昨日）
-    async function fetchYesterdayData(stockCode) {
+    // 关键修改：智能获取最近一个完整交易日数据（小于今天的最近一条K线）
+    async function fetchLatestCompleteData(stockCode) {
         let marketCode = stockCode.trim();
         if (!marketCode.startsWith('sh') && !marketCode.startsWith('sz')) {
             if (marketCode.startsWith('6')) marketCode = 'sh' + marketCode;
             else marketCode = 'sz' + marketCode;
         }
         const noCache = Date.now();
-        const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${marketCode},day,,,10,qfq&_=${noCache}`;
+        const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${marketCode},day,,,20,qfq&_=${noCache}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
@@ -711,43 +752,54 @@
         let klineData = stockData.qfqday || stockData.day;
         if (!klineData || !klineData.length) throw new Error('无K线数据');
         
-        if (klineData.length < 2) throw new Error('历史数据不足，无法获取昨日数据');
-        const yesterdayKline = klineData[klineData.length - 2];
-        const date = yesterdayKline[0];
-        const high = parseFloat(yesterdayKline[3]);
-        const low = parseFloat(yesterdayKline[4]);
-        const close = parseFloat(yesterdayKline[2]);
+        const today = getBeijingDate();
+        let targetKline = null;
+        // 从后向前查找第一个日期 < today 的K线（即最近一个完整交易日）
+        for (let i = klineData.length - 1; i >= 0; i--) {
+            const kDate = klineData[i][0];
+            if (kDate < today) {
+                targetKline = klineData[i];
+                break;
+            }
+        }
+        // 如果没找到（比如今天之前无数据），则取最后一条
+        if (!targetKline && klineData.length) targetKline = klineData[klineData.length - 1];
+        if (!targetKline) throw new Error('无法获取有效交易日数据');
+        
+        const date = targetKline[0];
+        const high = parseFloat(targetKline[3]);
+        const low = parseFloat(targetKline[4]);
+        const close = parseFloat(targetKline[2]);
         if (isNaN(high) || isNaN(low) || isNaN(close)) throw new Error('数据解析失败');
         return { high, low, close, date };
     }
     
-    async function fetchAndFillStockData(codeToFetch = null) {
+    // 核心获取并填充，可指定是否静默
+    async function fetchAndFillStockData(codeToFetch = null, silent = false) {
         const stockCode = (codeToFetch !== null) ? codeToFetch : stockCodeInput.value.trim();
         if (!stockCode) {
-            stockFetchStatus.innerHTML = '<span style="color:#ffa559;">⚠️ 请输入股票代码</span>';
+            if (!silent) stockFetchStatus.innerHTML = '<span style="color:#ffa559;">⚠️ 请输入股票代码</span>';
             return;
         }
-        
-        fetchStockBtn.classList.add('loading');
-        fetchStockBtn.textContent = '⏳ 获取中...';
-        stockFetchStatus.innerHTML = '<span style="color:#aac8e6;">正在获取昨日数据...</span>';
-        
+        if (!silent) {
+            fetchStockBtn.classList.add('loading');
+            fetchStockBtn.textContent = '⏳ 获取中...';
+            stockFetchStatus.innerHTML = '<span style="color:#aac8e6;">正在获取最新完整交易日数据...</span>';
+        }
         try {
             let stockName = null;
             try {
                 stockName = await fetchStockName(stockCode);
             } catch(e) { }
-            
-            const { high, low, close, date } = await fetchYesterdayData(stockCode);
+            const { high, low, close, date } = await fetchLatestCompleteData(stockCode);
             highInput.value = high;
             lowInput.value = low;
             closeInput.value = close;
-            
             const displayName = stockName ? `${stockName}(${stockCode})` : stockCode;
-            stockFetchStatus.innerHTML = `<span style="color:#6fcf97;">✅ ${displayName} 昨日(${date}) 高:${high.toFixed(2)} 低:${low.toFixed(2)} 收:${close.toFixed(2)}</span>`;
-            
+            if (!silent) {
+                stockFetchStatus.innerHTML = `<span style="color:#6fcf97;">✅ ${displayName} 最新交易日(${date}) 高:${high.toFixed(2)} 低:${low.toFixed(2)} 收:${close.toFixed(2)}</span>`;
+            }
             const indicators = recalcAndStore();
-            
             if (indicators && indicators.valid) {
                 addHistoryRecord({
                     code: stockCode,
@@ -763,12 +815,41 @@
                     al: indicators.al
                 });
             }
+            if (silent) {
+                showToast(`📅 日期变更，已自动更新 ${displayName} (${date})`);
+            }
         } catch (error) {
-            stockFetchStatus.innerHTML = `<span style="color:#f97373;">❌ 获取失败: ${error.message}</span>`;
+            if (!silent) {
+                stockFetchStatus.innerHTML = `<span style="color:#f97373;">❌ 获取失败: ${error.message}</span>`;
+            } else {
+                showToast(`⚠️ 自动更新失败: ${error.message}`, true);
+            }
         } finally {
-            fetchStockBtn.classList.remove('loading');
-            fetchStockBtn.textContent = '📥 获取昨日数据';
+            if (!silent) {
+                fetchStockBtn.classList.remove('loading');
+                fetchStockBtn.textContent = '📥 获取昨日数据';
+            }
         }
+    }
+    
+    // ---------- 跨日自动检测 ----------
+    async function checkAndAutoUpdate() {
+        const today = getBeijingDate();
+        if (lastCheckedDate && lastCheckedDate !== today) {
+            const currentCode = stockCodeInput.value.trim();
+            if (currentCode) {
+                await fetchAndFillStockData(currentCode, true);
+            }
+        }
+        lastCheckedDate = today;
+    }
+    
+    function startAutoDateCheck() {
+        lastCheckedDate = getBeijingDate();
+        if (autoCheckInterval) clearInterval(autoCheckInterval);
+        autoCheckInterval = setInterval(() => {
+            checkAndAutoUpdate();
+        }, 60000); // 每60秒检测一次
     }
     
     // ---------- 快捷选股存储 ----------
@@ -910,6 +991,7 @@
         clearHistoryBtn.addEventListener('click', clearHistory);
         loadQuickStocks();
         loadHistory();
+        startAutoDateCheck();
         fetchAndFillStockData('600519');
     }
     
